@@ -48,9 +48,9 @@
       used in combination with <tt>std::enable_if</tt>, for instance, to inhibit generation of
       a swap overload for the template for the case where values for a particular type
       parameter are not swappable. It is also often important to know whether a call to 'swap'
-      for that type may throw, primarily to propagate noexcept. In particular, the noexcept
-      status of a swap call is of interest when implementing a copy assignment operator or move
-      assignment operator in terms of swap to achieve the strong exception safety guarantee.
+      may throw, primarily to propagate noexcept. In particular, the noexcept status of a swap
+      call is of interest when implementing a copy assignment operator or move assignment
+      operator in terms of swap to achieve the strong exception safety guarantee.
     </p>
 
     <p>
