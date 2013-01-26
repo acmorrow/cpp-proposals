@@ -231,7 +231,7 @@ struct is_nothrow_swappable;
             </td>
             <td>
               <blockquote><tt><pre>
-is_swappable&lt;T,U&gt; &amp;&amp; noexcept(swap(declval&lt;T&&gt;(), declval&lt;U&&gt;()))
+is_swappable&lt;T,U&gt;::value &amp;&amp; noexcept(swap(declval&lt;T&&gt;(), declval&lt;U&&gt;()))
               </pre></tt></blockquote>
             </td>
             <td>
