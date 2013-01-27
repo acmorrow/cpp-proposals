@@ -8,41 +8,42 @@
 
   <body>
     <font size=-1>
-      Date: 2013-01-26 <BR>
-      Project: Programming Language C++, Library Working Group <BR>
-      Reply-To: Andrew Morrow &lt;andrew.c.morrow@gmail.com&gt; <BR>
-      Document number: <BR>
+      Date: 2013-01-27 <br>
+      Project: Programming Language C++, Library Working Group <br>
+      Reply-To: Andrew Morrow &lt;andrew.c.morrow@gmail.com&gt; <br>
+      Document number: TBD <br>
     </font>
 
-    <H1>[DRAFT] A proposal to add swappability traits to the standard library</H1>
+    <h1>[DRAFT] A proposal to add swappability traits to the standard library</h1>
 
-    <H2>I. Table of Contents</H2>
+    <h2>I. Table of Contents</h2>
     <ol type="I" start=2>
       <li><a href="#introduction">Introduction</a></li>
       <li><a href="#motivation">Motivation and Scope</a></li>
       <li><a href="#impact">Impact on the Standard</a></li>
       <li><a href="#design">Design Decisions</a></li>
       <li><a href="#spec">Technical Specification [INCOMPLETE]</a></li>
-      <li><a href="#impl">Example Implementation</a></li>
+      <li><a href="#impl">Implementation</a></li>
       <li><a href="#thanks">Acknowledgements</a></li>
       <li><a href="#biblio">References</a></li>
     </ol>
 
-    <a name="introduction"><H2>II. Introduction</H2></a>
+    <a name="introduction"><h2>II. Introduction</h2></a>
     <p>
       This proposal proposes the addition of two new type relationship properties to the C++
       standard library: <tt>std::is_swappable&lt;T, U&gt;</tt>
-      and <tt>std::is_nothrow_swappable&lt;T, U&gt;</tt>. The former will provide a static
-      constant bool value 'value', which is true if the expression
-      '<tt>swap(declval&lt;T&&gt;(), declval&lt;U&&gt;())</tt>' resolves when
-      <tt>std::swap</tt> is in scope. The latter will provide a static constant bool value
-      'value' which is true if the same expression resolves when <tt>std::swap</tt> is in scope
-      and the resolved function is known to be non-throwing.
+      and <tt>std::is_nothrow_swappable&lt;T, U&gt;</tt>. The former will derive
+      from <tt>std::true_type</tt> if the expression '<tt>swap(declval&lt;T&&gt;(),
+      declval&lt;U&&gt;())</tt>' resolves when
+      <tt>std::swap</tt> is in scope, and from <tt>std::false_type</tt> otherwise. The latter
+      will derive from <tt>std::true_type</tt> if the same expression resolves
+      when <tt>std::swap</tt> is in scope and the resolved function is known to be
+      non-throwing, or <tt>std::false_type</tt> otherwise.
     </p>
 
-    <a name="motivation"><H2>III. Motivation and Scope</H2></a>
+    <a name="motivation"><h2>III. Motivation and Scope</h2></a>
     <p>
-      When writing a template, it is often important to know whether or not values of a
+      When writing a template it is often important to know whether or not values of a
       particular template type parameter are swappable, either via <tt>std::swap</tt> or by a
       swap overload found by argument dependent lookup ("ADL swap"). This information could be
       used in combination with <tt>std::enable_if</tt>, for instance, to inhibit generation of
@@ -54,23 +55,24 @@
     </p>
 
     <p>
-      The current set of traits in the <tt>&lt;type_traits&gt;</tt> header does not include
-      traits to determine whether or not a given pair of types is swappable, or, if they are,
-      whether or not the swap is non-throwing. Without these traits, it is left to library
+      The current set of type relationship traits defined by the standard does not include
+      traits to determine whether a swap is available for any two types, or, if it is, whether
+      or not the resolved swap is non-throwing. Without these traits, it is left to library
       authors to use the existing library and language features to make the
-      determination. However, the quality of implementation often is not particulary
-      satisfying.
+      determination. However, the 'obvious' solutions are often wrong:
 
       For example, in the case of attempting to determine the noexcept status of a function
       that calls 'swap', it is not possible to form a correct noexcept specifier directly:
+    </p>
 
-      We can't use std::swap inside the noexcept operator:
+    <p>
+      We can't use std::swap inside the noexcept operator if we are using ADL swap in the body:
 
       <blockquote><tt><pre>
 template&lt;typename T&gt;
-struct wants_swap {
+struct X {
     // The swap in the noexcept expression may not be the same swap as found by ADL below.
-    friend void swap(wants_swap&amp; a, wants_swap&amp; b) noexcept(noexcept(std::swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
+    friend void swap(X&amp; a, X&amp; b) noexcept(noexcept(std::swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
         using std::swap;
         swap(a.val, b.val);
     }
@@ -78,13 +80,13 @@ struct wants_swap {
 };
       </pre></tt></blockquote>
 
-      But we can't use a non-qualified swap either:
+      But we can't use a non-qualified swap in the noexcept operator either:
 
       <blockquote><tt><pre>
 template&lt;typename T&gt;
-struct wants_swap {
+struct X {
     // ERROR if std::swap is not in scope and there is no swap found by ADL for T.
-    friend void swap(wants_swap&amp; a, wants_swap&amp; b) noexcept(noexcept(swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
+    friend void swap(X&amp; a, X&amp; b) noexcept(noexcept(swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
         using std::swap;
         swap(a.val, b.val);
     }
@@ -96,77 +98,76 @@ struct wants_swap {
 
       <blockquote><tt><pre>
 template&lt;typename T&gt;
-struct wants_swap {
+struct X {
     // ERROR: Cannot have a statement inside a noexcept operator; it requires an expression.
-    friend void swap(wants_swap&amp; a, wants_swap&amp; b) noexcept(noexcept(using std::swap; swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
+    friend void swap(X&amp; a, X&amp; b) noexcept(noexcept(using std::swap; swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
         using std::swap;
         swap(a.val, b.val);
     }
     T val;
 };
       </pre></tt></blockquote>
-
-      One workaround for this difficulty <a href="#biblio.so-adl-noexcept">[1]</a> is to use a
-      dummy namespace where <tt>std::swap</tt> is in scope to build a function with the correct
-      noexcept status and then interrogate the noexcept status of that function. However, this
-      is not a particularly elegant solution (and the linked example is not complete since it
-      only works for classes that are swappable) since it will require any library that wishes
-      to interrogate swap to either declare its own dummy namespace, or to rely on a
-      third-party implementation.
     </p>
 
     <p>
-      While it is possible to build a more complete implementation of the above
-      concept <a href="biblio.github-acm-swap-traits">[2]</a>, given the fundamental importance
-      of swap (and of non-throwing swaps in particular) it seems reasonable that the standard
-      library should provide this facility.
+      While it is not particularly difficult to build workarounds for this
+      issue <a href="#biblio.so-adl-noexcept">[1]</a><a href="#biblio.github-acm-swap-traits">[2]</a>
+      (and in particular see libc++<a href="#biblio.libcxx-swap-trats">[3]</a> which defines and
+      makes extensive use of these traits within its implementation, but of course does not
+      expose them), it seems reasonable that a future version of the standard library should
+      provide this facility. This is especially true given the fundamental importance of swap
+      (and of non-throwing swap in particular) to properly implementing move operations.
     </p>
 
-    <a name="impact"><H2>IV. Impact On the Standard</H2></a>
+    <a name="impact"><h2>IV. Impact On the Standard</h2></a>
     <p>
-      This proposal is a pure library extension. It does not require changes to any standard
-      classes, functions or headers. It can be implemented in standard C++11.
+      This proposal is a library extension. It does not require changes to any standard
+      classes, functions or headers. It can be implemented in C++11 and requires no core
+      language changes.
     </p>
 
-    <a name="design"><H2>V. Design Decisions</H2></a>
-
-    <H3>Goals</H3>
+    <a name="design"><h2>V. Design Decisions</h2></a>
+    <h3>Proposed Design</h3>
+    <h4>Goals</h4>
     <p>
       The behavior of the proposed classes is designed to be as similar possible to the
       existing type relationship classes defined in the <tt>&lt;type_traits&gt;</tt> header and
       to meet the requirements of [20.9.6] for templates that may be used to query
-      relationships between types at compile time. Specifically, the classes will meet the
-      requirements for <tt>BinaryTypeTrait</tt> as described in [20.9.1]. The names of the
+      relationships between types at compile time. Specifically, the classes meet the
+      requirements for a <tt>BinaryTypeTrait</tt> as described in [20.9.1]. The names of the
       proposed classes are selected to be as similar as possible to the names of the existing
-      type property and relationship classes as described in [20.9.2].
+      type property and type relationship classes as described in [20.9.2].
     </p>
 
-    <H3>Constructors</H3>
+    <h4>Constructors</h4>
     <p>
       The proposed classes declare no constructors of their own and do not manipulate the
-      visibility of constructors from their base classes.
+      visibility of constructors from their base classes. Since the base classes are
+      either <tt>std::true_type</tt> or <tt>std::false_type</tt>, the proposed classes will meet
+      the requirement that they be <tt>DefaultConstructible</tt> and <tt>CopyConstructible</tt>.
     </p>
 
-    <H3>Public Data</H3>
+    <h4>Public Data</h4>
     <p>
       By [20.9.1], as an implementation of <tt>BinaryTypeTrait</tt>, the classes must derive
-      publicly from a specialization of <tt>std::integral_constant</tt>, and by [20.9.6] that
+      publicly from a specialization of <tt>std::integral_constant</tt>, and, by [20.9.6], that
       specialization must be by way of deriving from <tt>std::true_type</tt>
       or <tt>std::false_type</tt>. The classes do not define any other members or manipulate
       the visibility of members from their base classes.
     <p>
 
-    <H3>Alternatives</H3>
+    <h3>Alternative Designs</h3>
     <p>
-      One potential way out of this difficulty would be if the language provided a "using
-      expression" rather than a "using statement", in which case the third example above could
-      be made to work:
+      One potential way out of the difficulty of obtaining the right swap in
+      the <tt>noexcept</tt> oeprator would be if the language provided a "using expression"
+      rather than a "using statement", in which case the third example above could be made to
+      work:
 
       <blockquote><tt><pre>
 template&lt;typename T&gt;
-struct wants_swap {
+struct X {
     // OK?: Some sort of way to have an expression that 'uses' something.
-    friend void swap(wants_swap&amp; a, wants_swap&amp; b) noexcept(noexcept(with using std::swap swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
+    friend void swap(X&amp; a, X&amp; b) noexcept(noexcept(with using std::swap swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
         using std::swap;
         swap(a.val, b.val);
     }
@@ -181,10 +182,10 @@ struct wants_swap {
       feature would be needed for things other than swap.
     </p>
 
-    <a name="spec"><H2>VI. Technical Specifications [INCOMPLETE]</H2></a>
-    <H3>Header</H3>
+    <a name="spec"><h2>VI. Technical Specifications [INCOMPLETE]</h2></a>
+    <h3>Header</h3>
     The new classes will be added to a new header <tt>swap_traits</tt>.
-    <H4> 20.9.X Header <tt>swap_traits</tt> synopsis</H4>
+    <h4> 20.9.X Header <tt>swap_traits</tt> synopsis</h4>
               <blockquote><tt><pre>
 namespace std {
   template&lt;typename T, typename U = T&gt;
@@ -195,7 +196,7 @@ namespace std {
 }
               </pre></tt></blockquote>
 
-    <H3>20.9.6 Relationships between types [meta.rel]</H3>
+    <h3>20.9.6 Relationships between types [meta.rel]</h3>
 
     <p>
       Add two new rows to Table 51:
@@ -215,7 +216,7 @@ struct is_swappable;
             </td>
             <td>
               The set of swaps considered for resolution must include <tt>std::swap</tt> as
-              well as swap overloads available via argument dependent look.
+              well as swap overloads available via argument dependent lookup.
             </td>
           </tr>
           <tr>
@@ -233,16 +234,16 @@ struct is_nothrow_swappable;
             </td>
             <td>
               The set of swaps considered for resolution must include <tt>std::swap</tt> as
-              well as swap overloads available via argument dependent look.
+              well as swap overloads available via argument dependent lookup.
             </td>
           </tr>
         </table>
       </center>
     </p>
 
-    <a name="impl"><H2>VII. Example Implementation</H2></a>
+    <a name="impl"><h2>VII. Implementation</h2></a>
     <p>
-      The following is one possible implementation of the above specification, derived from <a href="blbio.github-acm-swap-traits">[2]</a>:
+      The following is one possible implementation of the above specification, derived from <a href="#biblio.github-acm-swap-traits">[2]</a>:
       <blockquote><tt><pre>
 namespace std {
   namespace adl_swap_ns {
@@ -288,17 +289,31 @@ namespace std {
       </pre></tt></blockquote>
     </p>
 
-    <a name="thanks"><H2>VIII. Acknowledgements</H2></a>
+    <a name="thanks"><h2>VIII. Acknowledgements</h2></a>
     <p>
-      TODO
+      <ul>
+        <li> Howard Hinnant, for encouraging me to work on this proposal. <a href="#biblio.so-acm-why-no-swap-traits">[4]</a>
+      </ul>
     </p>
 
-    <a name="biblio"><H2>IX. References</H2></a>
+    <a name="biblio"><h2>IX. References</h2></a>
 
     <ul>
-      <li><a name="biblio.so-adl-noexcept" href=http://stackoverflow.com/questions/7635939/how-do-i-write-an-adl-enabled-noexcept-specification>[1] Stackoverflow post on writing an ADL enabled noexcept specification</a></li>
+      <li>
+        <a name="biblio.so-adl-noexcept" href=http://stackoverflow.com/questions/7635939/how-do-i-write-an-adl-enabled-noexcept-specification>[1] Stackoverflow post on writing an ADL enabled noexcept specification</a>
+      </li>
 
-      <li><a name="biblio.biblio.github-acm-swap-traits" href=https://github.com/acmorrow/error_or/blob/master/detail/is_nothrow_swappable.hpp>[2] Implementation of swap traits in a github project</a></li>
+      <li>
+        <a name="biblio.github-acm-swap-traits" href=https://github.com/acmorrow/error_or/blob/master/detail/is_nothrow_swappable.hpp>[2] Implementation of swap traits in a github project</a>
+      </li>
+
+      <li>
+        <a name="biblio.libcxx-swap-trats" href=http://llvm.org/viewvc/llvm-project/libcxx/trunk/include/type_traits?view=markup>[3] See __is_swappable and __is_nothrow_swappable in libc++ <tt>&lt;type_traits&gt;</tt>.</a>
+      </li>
+
+      <li>
+        <a name="biblio.so-acm-why-no-swap-traits" href=http://stackoverflow.com/questions/14483105/why-are-is-swappable-and-is-nothrow-swappable-not-included-in-c11>[4] Stackoverflow post requesting information on why C++11 does not offer swappability traits</a>
+      </li>
 
     </ul>
   </body>
