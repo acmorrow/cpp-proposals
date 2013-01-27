@@ -34,10 +34,10 @@
       standard library: <tt>std::is_swappable&lt;T, U&gt;</tt>
       and <tt>std::is_nothrow_swappable&lt;T, U&gt;</tt>. The former will provide a static
       constant bool value 'value', which is true if the expression
-      '<tt>swap(declval&lt;T&&gt;(), declval&lt;U&&gt;())</tt>' is well formed when
+      '<tt>swap(declval&lt;T&&gt;(), declval&lt;U&&gt;())</tt>' resolves when
       <tt>std::swap</tt> is in scope. The latter will provide a static constant bool value
-      'value' which is true if the same expression is well formed when <tt>std::swap</tt> is in
-      scope and is known to be non-throwing.
+      'value' which is true if the same expression resolves when <tt>std::swap</tt> is in scope
+      and the resolved function is known to be non-throwing.
     </p>
 
     <a name="motivation"><H2>III. Motivation and Scope</H2></a>
@@ -211,15 +211,11 @@ struct is_swappable;
               </pre></tt></blockquote>
             </td>
             <td>
-              The expression
-              <blockquote><tt><pre>
-swap(declval&lt;T&&gt;(), declval&lt;U&&gt;())
-              </pre></tt></blockquote>
-              is valid.
+              The expression <tt>swap(declval&lt;T&&gt;(), declval&lt;U&&gt;())</tt> resolves.
             </td>
             <td>
-              The swaps considered here must include <tt>std::swap</tt> and all matching swaps available
-              via argument dependent lookup.
+              The set of swaps considered for resolution must include <tt>std::swap</tt> as
+              well as swap overloads available via argument dependent look.
             </td>
           </tr>
           <tr>
@@ -230,13 +226,14 @@ struct is_nothrow_swappable;
               </pre></tt></blockquote>
             </td>
             <td>
-              <blockquote><tt><pre>
-is_swappable&lt;T,U&gt;::value &amp;&amp; noexcept(swap(declval&lt;T&&gt;(), declval&lt;U&&gt;()))
-              </pre></tt></blockquote>
+              <tt>is_swappable&lt;T,U&gt;::value</tt> is true  and
+              <tt>noexcept(swap(declval&lt;T&&gt;(), declval&lt;U&&gt;()))</tt> is true. Note
+              that the latter expression is only valid if the former is true, but simply anding
+              these expressions together will not work correctly.
             </td>
             <td>
-              The swaps considered here must include std::swap and all matching swaps available
-              via argument dependent lookup.
+              The set of swaps considered for resolution must include <tt>std::swap</tt> as
+              well as swap overloads available via argument dependent look.
             </td>
           </tr>
         </table>
