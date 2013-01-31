@@ -243,7 +243,12 @@ struct is_nothrow_swappable;
 
     <a name="impl"><h2>VII. Implementation</h2></a>
     <p>
-      The following is one possible implementation of the above specification, derived from <a href="#biblio.github-acm-swap-traits">[2]</a>:
+      The following is one possible implementation of the above specification, derived
+      from <a href="#biblio.github-acm-swap-traits">[2]</a>, which was itself heavily
+      influenced by the existing implementation in
+      libc++<a href="#biblio.libcxx-swap-trats">[3]</a> and discussions on
+      stackoverflow <a href="#biblio.so-adl-noexcept">[1]</a><a href="#biblio.so-acm-why-no-swap-traits">[4]</a>.
+
       <blockquote><tt><pre>
 namespace std {
   namespace adl_swap_ns {
