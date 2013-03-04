@@ -2,13 +2,13 @@
 
 <html>
   <head>
-    <title>[DRAFT] A proposal to add swappability traits to the standard library</title>
+    <title>[DRAFT 2] A proposal to add swappability traits to the standard library</title>
     <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
   </head>
 
   <body>
     <font size=-1>
-      Date: 2013-01-27 <br>
+      Date: 2013-03-03 <br>
       Project: Programming Language C++, Library Working Group <br>
       Reply-To: Andrew Morrow &lt;andrew.c.morrow@gmail.com&gt; <br>
       Document number: TBD <br>
@@ -30,7 +30,7 @@
 
     <a name="introduction"><h2>II. Introduction</h2></a>
     <p>
-      This proposal proposes the addition of two new type relationship properties to the C++
+      This proposal proposes the addition of two new type property predicates to the C++
       standard library: <tt>std::is_swappable&lt;T, U = T&gt;</tt>
       and <tt>std::is_nothrow_swappable&lt;T, U = T&gt;</tt>. The former will derive
       from <tt>std::true_type</tt> if the expression '<tt>swap(declval&lt;T&&gt;(),
@@ -55,7 +55,7 @@
     </p>
 
     <p>
-      The current set of type relationship traits defined by the standard does not include
+      The current set of type property predicates defined by the standard does not include
       traits to determine whether a swap is available for any two types, or, if it is, whether
       or not the resolved swap is non-throwing. Without these traits, it is left to library
       authors to use the existing library and language features to make the
@@ -199,10 +199,10 @@ namespace std {
     <h3>20.9.6 Relationships between types [meta.rel]</h3>
 
     <p>
-      Add two new rows to Table 51:
+      Add two new rows to Table 49:
       <center>
         <table border>
-          <caption>Table 51 - Type relationship predicates</caption>
+          <caption>Table 49 - Type property predicates</caption>
           <tr><td>Template</td><td>Condition</td><td>Comments</td></tr>
           <tr>
             <td>
@@ -212,11 +212,15 @@ struct is_swappable;
               </pre></tt></blockquote>
             </td>
             <td>
-              The expression <tt>swap(declval&lt;T&&gt;(), declval&lt;U&&gt;())</tt> resolves.
+              The expressions <tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt>
+              and <tt>swap(declval&lt;U&gt;(), declval&lt;T&gt;())</tt> are each well-formed
+              when treated as an unevaluated operand (Clause 5).
             </td>
             <td>
-              The set of swaps considered for resolution must include <tt>std::swap</tt> as
-              well as swap overloads available via argument dependent lookup.
+              The context in which the aforementioned expressions are considered shall ensure
+              that a candidate set for <tt>swap</tt> consists of the two <tt>swap</tt> function
+              templates defined in <tt>&lt;utility&gt;</tt> (20.2) and the lookup set produced
+              by argument-dependent lookup (3.4.2).
             </td>
           </tr>
           <tr>
@@ -227,14 +231,13 @@ struct is_nothrow_swappable;
               </pre></tt></blockquote>
             </td>
             <td>
-              <tt>is_swappable&lt;T,U&gt;::value</tt> is true  and
-              <tt>noexcept(swap(declval&lt;T&&gt;(), declval&lt;U&&gt;()))</tt> is true. Note
-              that the latter expression is only valid if the former is true, but simply anding
-              these expressions together will not work correctly.
+              <tt>is_swappable&lt;T,U&gt;::value</tt> is true and the
+              expression <tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt> is known not to
+              throw any exceptions (5.3.7).
             </td>
             <td>
-              The set of swaps considered for resolution must include <tt>std::swap</tt> as
-              well as swap overloads available via argument dependent lookup.
+              The context in which the aforementioned <tt>swap</tt> expression is considered is
+              the same as that for <tt>is_swappable</tt>.
             </td>
           </tr>
         </table>
@@ -251,46 +254,47 @@ struct is_nothrow_swappable;
 
       <blockquote><tt><pre>
 namespace std {
-  namespace adl_swap_ns {
-    using std::swap;
 
-    template&lt;typename T, typename U&gt;
-    class is_swappable_test {
+template&lt;typename __T, typename __U&gt;
+class __is_swappable_test {
 
-      struct swap_not_found_type {};
+    struct __swap_not_found_type;
 
-      template&lt;typename V1, typename V2&gt;
-      static auto test(V1&amp; v1, V2&amp; v2) -&gt; decltype(swap(v1, v2));
+    template&lt;typename __V1, typename __V2&gt;
+    static auto __test(__V1 __v1, __V2 __v2) -&gt; decltype(swap(__v1, __v2));
 
-      template&lt;typename V1, typename V2&gt;
-      static auto test(...) -&gt; swap_not_found_type;
+    template&lt;typename __V1, typename __V2&gt;
+    static auto __test(...) -&gt; __swap_not_found_type;
 
-      using test_type = decltype(test&lt;T, U&gt;(std::declval&lt;T&amp;&gt;(), std::declval&lt;U&amp;&gt;()));
+    using __test_type_tu = decltype(__test&lt;__T, __U&gt;(std::declval&lt;__T&gt;(), std::declval&lt;__U&gt;()));
+    using __test_type_ut = decltype(__test&lt;__U, __T&gt;(std::declval&lt;__U&gt;(), std::declval&lt;__T&gt;()));
 
-    public:
-      static constexpr bool value = !std::is_same&lt;test_type, swap_not_found_type&gt;::value;
-    };
+public:
+    static constexpr bool __value =
+        !std::is_same&lt;__test_type_tu, __swap_not_found_type&gt;::value &amp;&amp;
+        !std::is_same&lt;__test_type_ut, __swap_not_found_type&gt;::value;
+};
 
-    template&lt;bool, typename T, typename U&gt;
-    struct is_nothrow_swappable_test :
-      std::conditional&lt;noexcept(swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;U&amp;&gt;())),
-                       std::true_type, std::false_type&gt;::type {};
+template&lt;bool, typename __T, typename __U&gt;
+struct __is_nothrow_swappable_test :
+    std::conditional&lt;
+    noexcept(swap(std::declval&lt;__T&gt;(), std::declval&lt;__U&gt;())),
+    std::true_type, std::false_type&gt;::type {};
 
-    template&lt;typename T, typename U&gt;
-    struct is_nothrow_swappable_test&lt;false, T, U&gt; :
-      std::false_type {};
+template&lt;typename __T, typename __U&gt;
+struct __is_nothrow_swappable_test&lt;false, __T, __U&gt; :
+    std::false_type {};
 
-  }
-
-  template&lt;typename T, typename U = T&gt;
-  struct is_swappable :
-    std::conditional&lt;adl_swap_ns::is_swappable_test&lt;T, U&gt;::value,
+template&lt;typename __T, typename __U = __T&gt;
+struct is_swappable :
+    std::conditional&lt;__is_swappable_test&lt;__T, __U&gt;::__value,
                      std::true_type, std::false_type&gt;::type {};
 
-  template&lt;typename T, typename U = T&gt;
-  struct is_nothrow_swappable :
-    adl_swap_ns::is_nothrow_swappable_test&lt;is_swappable&lt;T, U&gt;::value, T, U&gt; {};
-}
+template&lt;typename __T, typename __U = __T&gt;
+struct is_nothrow_swappable :
+    __is_nothrow_swappable_test&lt;is_swappable&lt;__T, __U&gt;::value, __T, __U&gt; {};
+
+} // namespace std
       </pre></tt></blockquote>
     </p>
 
