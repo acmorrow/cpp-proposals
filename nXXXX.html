@@ -185,9 +185,22 @@ struct X {
 
     <a name="spec"><h2>VI. Technical Specifications</h2></a>
     <h3>Header</h3>
-    The new classes will be added to a new header <tt>swap_traits</tt>.
-    <h4> 20.9.X Header <tt>swap_traits</tt> synopsis</h4>
+    The new classes will be added to a new header <tt>&lt;swap_traits&gt;</tt>
+    <h4> 20.9.X Header <tt>&lt;swap_traits&gt;</tt> synopsis</h4>
+
+    <ol>
+      <li>
+        The header <tt>&lt;swap_traits&gt;</tt> defines the type property
+        predicates <tt>is_swappable</tt>
+        and <tt>is_nothrow_swappable</tt>. The <tt>&lt;swap_traits&gt;</tt> header
+        includes <tt>&lt;utility&gt;</tt> to ensure that <tt>std::swap</tt> is among the
+        candidate functions considered by these predicates, as required by 20.9.4.3.
+      </li>
+    </ol>
+
               <blockquote><tt><pre>
+#include &lt;utility&gt;
+
 namespace std {
   template&lt;typename T, typename U = T&gt;
   struct is_swappable;
