@@ -131,26 +131,27 @@ struct X {
     <h4>Goals</h4>
     <p>
       The behavior of the proposed classes is designed to be as similar possible to the
-      existing type relationship classes defined in the <tt>&lt;type_traits&gt;</tt> header and
-      to meet the requirements of [20.9.6] for templates that may be used to query
-      relationships between types at compile time. Specifically, the classes meet the
-      requirements for a <tt>BinaryTypeTrait</tt> as described in [20.9.1]. The names of the
-      proposed classes are selected to be as similar as possible to the names of the existing
-      type property and type relationship classes as described in [20.9.2].
+      existing type property classes defined in the <tt>&lt;type_traits&gt;</tt> header and to
+      meet the requirements of [20.9.4] for templates that may be used to query the properties
+      of a type at compile time. Specifically, the classes meet the requirements for
+      a <tt>UnaryTypeTrait</tt> as described in [20.9.1]. The names of the proposed classes are
+      selected to be as similar as possible to the names of the existing type property classes
+      as described in [20.9.4].
     </p>
 
     <h4>Constructors</h4>
     <p>
       The proposed classes declare no constructors of their own and do not manipulate the
       visibility of constructors from their base classes. Since the base classes are
-      either <tt>std::true_type</tt> or <tt>std::false_type</tt>, the proposed classes will meet
-      the requirement that they be <tt>DefaultConstructible</tt> and <tt>CopyConstructible</tt>.
+      either <tt>std::true_type</tt> or <tt>std::false_type</tt>, the proposed classes will
+      meet the requirement that they be <tt>DefaultConstructible</tt>
+      and <tt>CopyConstructible</tt>.
     </p>
 
     <h4>Public Data</h4>
     <p>
-      By [20.9.1], as an implementation of <tt>BinaryTypeTrait</tt>, the classes must derive
-      publicly from a specialization of <tt>std::integral_constant</tt>, and, by [20.9.6], that
+      By 20.9.1, as an implementation of <tt>UnaryTypeTrait</tt>, the classes must derive
+      publicly from a specialization of <tt>std::integral_constant</tt>, and that
       specialization must be by way of deriving from <tt>std::true_type</tt>
       or <tt>std::false_type</tt>. The classes do not define any other members or manipulate
       the visibility of members from their base classes.
@@ -184,9 +185,22 @@ struct X {
 
     <a name="spec"><h2>VI. Technical Specifications</h2></a>
     <h3>Header</h3>
-    The new classes will be added to a new header <tt>swap_traits</tt>.
-    <h4> 20.9.X Header <tt>swap_traits</tt> synopsis</h4>
+    The new classes will be added to a new header <tt>&lt;swap_traits&gt;</tt>
+    <h4> 20.9.X Header <tt>&lt;swap_traits&gt;</tt> synopsis</h4>
+
+    <ol>
+      <li>
+        The header <tt>&lt;swap_traits&gt;</tt> defines the type property
+        predicates <tt>is_swappable</tt>
+        and <tt>is_nothrow_swappable</tt>. The <tt>&lt;swap_traits&gt;</tt> header
+        includes <tt>&lt;utility&gt;</tt> to ensure that <tt>std::swap</tt> is among the
+        candidate functions considered by these predicates, as required by 20.9.4.3.
+      </li>
+    </ol>
+
               <blockquote><tt><pre>
+#include &lt;utility&gt;
+
 namespace std {
   template&lt;typename T, typename U = T&gt;
   struct is_swappable;
@@ -196,14 +210,14 @@ namespace std {
 }
               </pre></tt></blockquote>
 
-    <h3>20.9.6 Relationships between types [meta.rel]</h3>
+    <h3>20.9.4.3 Relationships between types [meta.unary.prop]</h3>
 
     <p>
       Add two new rows to Table 49:
       <center>
         <table border>
           <caption>Table 49 - Type property predicates</caption>
-          <tr><td>Template</td><td>Condition</td><td>Comments</td></tr>
+          <tr><td>Template</td><td>Condition</td><td>Preconditions</td></tr>
           <tr>
             <td>
               <blockquote><tt><pre>
@@ -231,7 +245,7 @@ struct is_nothrow_swappable;
               </pre></tt></blockquote>
             </td>
             <td>
-              <tt>is_swappable&lt;T,U&gt;::value</tt> is true and the
+              <tt>is_swappable&lt;T,U&gt;::value</tt> is true, and the
               expression <tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt> is known not to
               throw any exceptions (5.3.7).
             </td>
