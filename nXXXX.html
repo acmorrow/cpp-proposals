@@ -2,19 +2,19 @@
 
 <html>
   <head>
-    <title>[DRAFT 3] A proposal to add swappability traits to the standard library</title>
+    <title>[DRAFT 4] A proposal to add swappability traits to the standard library</title>
     <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
   </head>
 
   <body>
     <font size=-1>
-      Date: 2013-03-06 <br>
+      Date: 2013-03-10 <br>
       Project: Programming Language C++, Library Working Group <br>
       Reply-To: Andrew Morrow &lt;andrew.c.morrow@gmail.com&gt; <br>
       Document number: TBD <br>
     </font>
 
-    <h1>[DRAFT 3] A proposal to add swappability traits to the standard library</h1>
+    <h1>[DRAFT 4] A proposal to add swappability traits to the standard library</h1>
 
     <h2>I. Table of Contents</h2>
     <ol type="I" start=2>
@@ -32,13 +32,23 @@
     <p>
       This proposal proposes the addition of two new type property predicates to the C++
       standard library: <tt>std::is_swappable&lt;T, U = T&gt;</tt>
-      and <tt>std::is_nothrow_swappable&lt;T, U = T&gt;</tt>. The former will derive
-      from <tt>std::true_type</tt> if the expression '<tt>swap(declval&lt;T&&gt;(),
-      declval&lt;U&&gt;())</tt>' resolves when
-      <tt>std::swap</tt> is in scope, and from <tt>std::false_type</tt> otherwise. The latter
-      will derive from <tt>std::true_type</tt> if the same expression resolves
-      when <tt>std::swap</tt> is in scope and the resolved function is known to be
-      non-throwing, or <tt>std::false_type</tt> otherwise.
+      and <tt>std::is_nothrow_swappable&lt;T, U = T&gt;</tt>.
+    </p>
+
+    <p>
+      The type property predicate <tt>std::is_swappable&lt;T, U = T&gt;</tt> will derive
+      from <tt>std::true_type</tt> if the expressions '<tt>swap(declval&lt;T&gt;(),
+      declval&lt;U&gt;())</tt>' and '<tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt>' are
+      both well-formed when
+      <tt>std::swap</tt> is in scope, and from <tt>std::false_type</tt> otherwise.
+    </p>
+
+    <p>
+      The type property predicate <tt>std::is_nothrow_swappable&lt;T, U = T&gt;</tt> will
+      derive from <tt>std::true_type</tt> if <tt>std::is_swappable&lt;T, U&gt;</tt> derives
+      from <tt>std::true_type</tt> and the expression '<tt>swap(declval&lt;T&gt;(),
+      declval&lt;U&gt;())</tt> is known to be non-throwing, and from <tt>std::false_type</tt>
+      otherwise.
     </p>
 
     <a name="motivation"><h2>III. Motivation and Scope</h2></a>
@@ -139,28 +149,10 @@ struct X {
       as described in [20.9.4].
     </p>
 
-    <h4>Constructors</h4>
-    <p>
-      The proposed classes declare no constructors of their own and do not manipulate the
-      visibility of constructors from their base classes. Since the base classes are
-      either <tt>std::true_type</tt> or <tt>std::false_type</tt>, the proposed classes will
-      meet the requirement that they be <tt>DefaultConstructible</tt>
-      and <tt>CopyConstructible</tt>.
-    </p>
-
-    <h4>Public Data</h4>
-    <p>
-      By 20.9.1, as an implementation of <tt>UnaryTypeTrait</tt>, the classes must derive
-      publicly from a specialization of <tt>std::integral_constant</tt>, and that
-      specialization must be by way of deriving from <tt>std::true_type</tt>
-      or <tt>std::false_type</tt>. The classes do not define any other members or manipulate
-      the visibility of members from their base classes.
-    <p>
-
     <h3>Alternative Designs</h3>
     <p>
       One potential way out of the difficulty of obtaining the right swap in
-      the <tt>noexcept</tt> oeprator would be if the language provided a "using expression"
+      the <tt>noexcept</tt> operator would be if the language provided a "using expression"
       rather than a "using statement", in which case the third example above could be made to
       work:
 
@@ -210,7 +202,7 @@ namespace std {
 }
               </pre></tt></blockquote>
 
-    <h3>20.9.4.3 Relationships between types [meta.unary.prop]</h3>
+    <h3>20.9.4.3 Type Properties [meta.unary.prop]</h3>
 
     <p>
       Add two new rows to Table 49:
