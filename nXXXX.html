@@ -3,7 +3,7 @@
 <html>
   <head>
     <title>A proposal to add swappability traits to the standard library</title>
-    <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+    <meta http-equiv=Content-Type content="text/html; charset=utf-8">
   </head>
 
   <body>
@@ -51,7 +51,7 @@
       otherwise.
     </p>
 
-    <a name="motivation"><h2>III. Motivation and Scope</h2></a>
+    <h2><a name="motivation">III. Motivation and Scope</a></h2>
     <p>
       When writing a template it is often important to know whether or not values of a
       particular template type parameter are swappable, either via <tt>std::swap</tt> or by a
@@ -77,8 +77,9 @@
 
     <p>
       We can't use std::swap inside the noexcept operator if we are using ADL swap in the body:
+    </p>
 
-      <blockquote><tt><pre>
+    <blockquote><pre><tt>
 template&lt;typename T&gt;
 struct X {
     // The swap in the noexcept expression may not be the same swap as found by ADL below.
@@ -88,11 +89,13 @@ struct X {
     }
     T val;
 };
-      </pre></tt></blockquote>
+    </tt></pre></blockquote>
 
+    <p>
       But we can't use a non-qualified swap in the noexcept operator either:
+    </p>
 
-      <blockquote><tt><pre>
+    <blockquote><pre><tt>
 template&lt;typename T&gt;
 struct X {
     // ERROR if std::swap is not in scope and there is no swap found by ADL for T.
@@ -102,11 +105,13 @@ struct X {
     }
     T val;
 };
-      </pre></tt></blockquote>
+    </tt></pre></blockquote>
 
+    <p>
       And we can't enable ADL swap inside the noexcept operator:
+    </p>
 
-      <blockquote><tt><pre>
+    <blockquote><pre><tt>
 template&lt;typename T&gt;
 struct X {
     // ERROR: Cannot have a statement inside a noexcept operator; it requires an expression.
@@ -116,8 +121,8 @@ struct X {
     }
     T val;
 };
-      </pre></tt></blockquote>
-    </p>
+    </tt></pre></blockquote>
+
 
     <p>
       While it is not particularly difficult to build workarounds for this
@@ -129,14 +134,14 @@ struct X {
       (and of non-throwing swap in particular) to properly implementing move operations.
     </p>
 
-    <a name="impact"><h2>IV. Impact On the Standard</h2></a>
+    <h2><a name="impact">IV. Impact On the Standard</a></h2>
     <p>
       This proposal is a library extension. It does not require changes to any standard
       classes, functions or headers. It can be implemented in C++11 and requires no core
       language changes.
     </p>
 
-    <a name="design"><h2>V. Design Decisions</h2></a>
+    <h2><a name="design">V. Design Decisions</a></h2>
     <h3>Proposed Design</h3>
     <h4>Goals</h4>
     <p>
@@ -155,8 +160,8 @@ struct X {
       the <tt>noexcept</tt> operator would be if the language provided a "using expression"
       rather than a "using statement", in which case the third example above could be made to
       work:
-
-      <blockquote><tt><pre>
+    </p>
+      <blockquote><pre><tt>
 template&lt;typename T&gt;
 struct X {
     // OK?: Some sort of way to have an expression that 'uses' something.
@@ -166,8 +171,9 @@ struct X {
     }
     T val;
 };
-      </pre></tt></blockquote>
+      </tt></pre></blockquote>
 
+    <p>
       One advantage of having such a 'using expression' available in the language is that it
       solves the more general problem of obtaining names via 'std or ADL' inside a noexcept
       operator. However, this would be a much more significant change, involving updates to the
@@ -175,7 +181,7 @@ struct X {
       feature would be needed for things other than swap.
     </p>
 
-    <a name="spec"><h2>VI. Technical Specifications</h2></a>
+    <h2><a name="spec">VI. Technical Specifications</a></h2>
     <h3>Header</h3>
     The new classes will be added to a new header <tt>&lt;swap_traits&gt;</tt>
     <h4> 20.9.X Header <tt>&lt;swap_traits&gt;</tt> synopsis</h4>
@@ -190,7 +196,7 @@ struct X {
       </li>
     </ol>
 
-              <blockquote><tt><pre>
+    <blockquote><pre><tt>
 #include &lt;utility&gt;
 
 namespace std {
@@ -200,65 +206,64 @@ namespace std {
   template&lt;typename T, typename U = T&gt;
   struct is_nothrow_swappable;
 }
-              </pre></tt></blockquote>
+    </tt></pre></blockquote>
 
     <h3>20.9.4.3 Type Properties [meta.unary.prop]</h3>
 
-    <p>
-      Add two new rows to Table 49:
-      <center>
-        <table border>
-          <caption>Table 49 - Type property predicates</caption>
-          <tr><td>Template</td><td>Condition</td><td>Preconditions</td></tr>
-          <tr>
-            <td>
-              <blockquote><tt><pre>
+    Add two new rows to Table 49:
+    <center>
+      <table border>
+        <caption>Table 49 - Type property predicates</caption>
+        <tr><td>Template</td><td>Condition</td><td>Preconditions</td></tr>
+        <tr>
+          <td>
+            <blockquote><pre><tt>
 template&lt;typename T, typename U = T&gt;
 struct is_swappable;
-              </pre></tt></blockquote>
-            </td>
-            <td>
-              The expressions <tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt>
-              and <tt>swap(declval&lt;U&gt;(), declval&lt;T&gt;())</tt> are each well-formed
-              when treated as an unevaluated operand (Clause 5).
-            </td>
-            <td>
-              The context in which the aforementioned expressions are considered shall ensure
-              that a candidate set for <tt>swap</tt> consists of the two <tt>swap</tt> function
-              templates defined in <tt>&lt;utility&gt;</tt> (20.2) and the lookup set produced
-              by argument-dependent lookup (3.4.2).
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <blockquote><tt><pre>
+            </tt></pre></blockquote>
+          </td>
+          <td>
+            The expressions <tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt>
+            and <tt>swap(declval&lt;U&gt;(), declval&lt;T&gt;())</tt> are each well-formed
+            when treated as an unevaluated operand (Clause 5).
+          </td>
+          <td>
+            The context in which the aforementioned expressions are considered shall ensure
+            that a candidate set for <tt>swap</tt> consists of the two <tt>swap</tt> function
+            templates defined in <tt>&lt;utility&gt;</tt> (20.2) and the lookup set produced
+            by argument-dependent lookup (3.4.2).
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <blockquote><pre><tt>
 template&lt;typename T, typename U = T&gt;
 struct is_nothrow_swappable;
-              </pre></tt></blockquote>
-            </td>
-            <td>
-              <tt>is_swappable&lt;T,U&gt;::value</tt> is true, and the
-              expression <tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt> is known not to
-              throw any exceptions (5.3.7).
-            </td>
-            <td>
-              The context in which the aforementioned <tt>swap</tt> expression is considered is
-              the same as that for <tt>is_swappable</tt>.
-            </td>
-          </tr>
-        </table>
-      </center>
-    </p>
+            </tt></pre></blockquote>
+          </td>
+          <td>
+            <tt>is_swappable&lt;T,U&gt;::value</tt> is true, and the
+            expression <tt>swap(declval&lt;T&gt;(), declval&lt;U&gt;())</tt> is known not to
+            throw any exceptions (5.3.7).
+          </td>
+          <td>
+            The context in which the aforementioned <tt>swap</tt> expression is considered is
+            the same as that for <tt>is_swappable</tt>.
+          </td>
+        </tr>
+      </table>
+    </center>
 
-    <a name="impl"><h2>VII. Implementation</h2></a>
+    <h2><a name="impl">VII. Implementation</a></h2>
     <p>
       The following is one possible implementation of the above specification, derived
       from <a href="#biblio.github-acm-swap-traits">[2]</a>, which was itself heavily
       influenced by the existing implementation in
       libc++<a href="#biblio.libcxx-swap-trats">[3]</a> and discussions on
       stackoverflow <a href="#biblio.so-adl-noexcept">[1]</a><a href="#biblio.so-acm-why-no-swap-traits">[4]</a>.
+    </p>
 
-      <blockquote><tt><pre>
+    <blockquote><pre><tt>
 namespace std {
 
 template&lt;typename __T, typename __U&gt;
@@ -301,34 +306,31 @@ struct is_nothrow_swappable :
     __is_nothrow_swappable_test&lt;is_swappable&lt;__T, __U&gt;::value, __T, __U&gt; {};
 
 } // namespace std
-      </pre></tt></blockquote>
-    </p>
+    </tt></pre></blockquote>
 
-    <a name="thanks"><h2>VIII. Acknowledgements</h2></a>
-    <p>
+    <h2><a name="thanks">VIII. Acknowledgements</a></h2>
       <ul>
         <li>Howard Hinnant, for encouraging me to work on this proposal. <a href="#biblio.so-acm-why-no-swap-traits">[4]</a></li>
-        <li><a href=http://www.10gen.com>10gen.com</a>, for their support during the development of this proposal.</li>
+        <li><a href='http://www.10gen.com'>10gen.com</a>, for their support during the development of this proposal.</li>
       </ul>
-    </p>
 
-    <a name="biblio"><h2>IX. References</h2></a>
+    <h2><a name="biblio">IX. References</a></h2>
 
     <ul>
       <li>
-        <a name="biblio.so-adl-noexcept" href=http://stackoverflow.com/questions/7635939/how-do-i-write-an-adl-enabled-noexcept-specification>[1] Stackoverflow post on writing an ADL enabled noexcept specification</a>
+        <a name="biblio.so-adl-noexcept" href='http://stackoverflow.com/questions/7635939/how-do-i-write-an-adl-enabled-noexcept-specification'>[1] Stackoverflow post on writing an ADL enabled noexcept specification</a>
       </li>
 
       <li>
-        <a name="biblio.github-acm-swap-traits" href=https://github.com/acmorrow/error_or/blob/master/detail/is_nothrow_swappable.hpp>[2] Implementation of swap traits in a github project</a>
+        <a name="biblio.github-acm-swap-traits" href='https://github.com/acmorrow/error_or/blob/master/detail/is_nothrow_swappable.hpp'>[2] Implementation of swap traits in a github project</a>
       </li>
 
       <li>
-        <a name="biblio.libcxx-swap-trats" href=http://llvm.org/viewvc/llvm-project/libcxx/trunk/include/type_traits?view=markup>[3] See __is_swappable and __is_nothrow_swappable in libc++ <tt>&lt;type_traits&gt;</tt>.</a>
+        <a name="biblio.libcxx-swap-trats" href='http://llvm.org/viewvc/llvm-project/libcxx/trunk/include/type_traits?view=markup'>[3] See __is_swappable and __is_nothrow_swappable in libc++ <tt>&lt;type_traits&gt;</tt>.</a>
       </li>
 
       <li>
-        <a name="biblio.so-acm-why-no-swap-traits" href=http://stackoverflow.com/questions/14483105/why-are-is-swappable-and-is-nothrow-swappable-not-included-in-c11>[4] Stackoverflow post requesting information on why C++11 does not offer swappability traits</a>
+        <a name="biblio.so-acm-why-no-swap-traits" href='http://stackoverflow.com/questions/14483105/why-are-is-swappable-and-is-nothrow-swappable-not-included-in-c11'>[4] Stackoverflow post requesting information on why C++11 does not offer swappability traits</a>
       </li>
 
     </ul>
