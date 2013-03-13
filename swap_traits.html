@@ -272,7 +272,7 @@ class __is_swappable_test {
     struct __swap_not_found_type;
 
     template&lt;typename __V1, typename __V2&gt;
-    static auto __test(__V1 __v1, __V2 __v2) -&gt; decltype(swap(__v1, __v2));
+    static auto __test(__V1&amp;&amp; __v1, __V2&amp;&amp; __v2) -&gt; decltype(swap(std::forward&lt;__V1&gt;(__v1), std::forward&lt;__V2&gt;(__v2)));
 
     template&lt;typename __V1, typename __V2&gt;
     static auto __test(...) -&gt; __swap_not_found_type;
