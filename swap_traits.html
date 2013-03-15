@@ -136,9 +136,60 @@ struct X {
 
     <h2><a name="impact">IV. Impact On the Standard</a></h2>
     <p>
-      This proposal is a library extension. It does not require changes to any standard
-      classes, functions or headers. It can be implemented in C++11 and requires no core
-      language changes.
+      When <tt>is_swappable</tt> and <tt>is_nothrow_swappable</tt> were first proposed, it was
+      expected that they both could be implemented in C++11 as pure library
+      extensions. However, the following example demonstrates that this is not true:
+    </p>
+
+    <blockquote><pre><tt>
+#include &lt;swap_traits&gt;
+
+struct X {
+    X&amp; operator=(X const&amp;) = delete;
+};
+
+static_assert(!is_swappable&lt;X&gt;::value_type);
+    </tt></pre></blockquote>
+
+    <p>
+      This code unfortunately will compile with the partial implementation
+      of <tt>is_swappable</tt> proposed below, even though it should not, because in an
+      unevaluated context the call to
+      <tt>std::swap</tt> is OK, but instantiation would fail due to <tt>X</tt> not meeting the
+      requirements for <tt>std::swap</tt>.
+    </p>
+
+    <p>
+      There are a few possible solutions:
+      <ul>
+        <li>
+          Do nothing, keep <tt>is_swappable</tt> and <tt>is_nothrow_swappable</tt> as pure
+          libary extensions, but document that <tt>is_swappable</tt> does not mean that calls
+          to <tt>std::swap</tt> are necessarily well formed.
+        </li>
+        <li>
+          Adopt weaker names for these traits. It is suprising to find
+          that <tt>is_swappable&ltX&gt;</tt> is true but that <tt>std::swap(x, x)</tt>
+          fails. However, if the traits were named <tt>is_swap_declared</tt>
+          and <tt>is_declared_swap_nothrow</tt> or something similar then it would not be
+          surprising to find that even though swap is declared, it can't be used. With weaker
+          names, both traits could be implemented as pure library extensions.
+        </li>
+        <li>
+          Adopt the traits with the proposed names and strong semantics, but drop the
+          requirement that they be implemented purely in C++11. This would require compiler
+          vendors to implement <tt>is_swappable</tt> as a compiler intrinsic or extension. With
+          a strong <tt>is_swappable</tt> it is possible that <tt>is_nothrow_swappable</tt>
+          could still be implemented as a pure library extension.
+        </li>
+        <li>
+          Adopt a requirement that the declaration of <tt>std::swap</tt> be constrained so
+          that <tt>std::swap</tt> is not in the candidate set if the types do not meet the
+          requirements for <tt>std::swap</tt> There is precedent for this practice: libc++, for
+          instance, does constrain its swap this way. Interestingly, libc++ uses its own
+          internal swappability traits to achieve this restricition.
+        </li>
+      </ul>
     </p>
 
     <h2><a name="design">V. Design Decisions</a></h2>
@@ -254,13 +305,17 @@ struct is_nothrow_swappable;
       </table>
     </center>
 
-    <h2><a name="impl">VII. Implementation</a></h2>
+    <h2><a name="impl">VII. Partial Implementation</a></h2>
     <p>
-      The following is one possible implementation of the above specification, derived
+      The following is partial implementation of the above specification, derived
       from <a href="#biblio.github-acm-swap-traits">[2]</a>, which was itself heavily
       influenced by the existing implementation in
       libc++<a href="#biblio.libcxx-swap-trats">[3]</a> and discussions on
       stackoverflow <a href="#biblio.so-adl-noexcept">[1]</a><a href="#biblio.so-acm-why-no-swap-traits">[4]</a>.
+    </p>
+
+    <p>
+      As noted above, this implementation is incomplete.
     </p>
 
     <blockquote><pre><tt>
