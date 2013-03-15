@@ -169,7 +169,7 @@ static_assert(!is_swappable&lt;X&gt;::value_type);
         </li>
         <li>
           Adopt weaker names for these traits. It is suprising to find
-          that <tt>is_swappable&ltX&gt;</tt> is true but that <tt>std::swap(x, x)</tt>
+          that <tt>is_swappable&lt;X&gt;</tt> is true but that <tt>std::swap(x, x)</tt>
           fails. However, if the traits were named <tt>is_swap_declared</tt>
           and <tt>is_declared_swap_nothrow</tt> or something similar then it would not be
           surprising to find that even though swap is declared, it can't be used. With weaker
